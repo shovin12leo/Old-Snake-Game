@@ -1,0 +1,132 @@
+#pip install pygame
+#pip install random
+import pygame
+import random
+
+# Initialize Pygame
+pygame.init()
+
+# Set up the screen
+SCREEN_WIDTH = 400
+SCREEN_HEIGHT = 400
+GRID_SIZE = 20
+GRID_WIDTH = SCREEN_WIDTH // GRID_SIZE
+GRID_HEIGHT = SCREEN_HEIGHT // GRID_SIZE
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Snake Game")
+
+# Colors
+WHITE = (255, 255, 255)
+GREEN = (0, 255, 0)
+RED = (255, 0, 0)
+
+# Snake
+snake = [(100, 100)]
+dx, dy = GRID_SIZE, 0
+
+# Food
+food = (200, 200)
+
+# Game variables
+clock = pygame.time.Clock()
+is_game_over = False
+is_paused = False
+level = 1
+speed = 150
+
+def draw_snake():
+    for segment in snake:
+        pygame.draw.rect(screen, GREEN, (segment[0], segment[1], GRID_SIZE, GRID_SIZE))
+
+def draw_food():
+    pygame.draw.rect(screen, RED, (food[0], food[1], GRID_SIZE, GRID_SIZE))
+
+def move_snake():
+    global snake, food, dx, dy, is_game_over, level, speed
+
+    # Move snake
+    head = (snake[0][0] + dx, snake[0][1] + dy)
+    snake = [head] + snake[:-1]
+
+    # Check collision with food
+    if head == food:
+        snake.append(snake[-1])
+        food = (random.randint(0, GRID_WIDTH - 1) * GRID_SIZE, random.randint(0, GRID_HEIGHT - 1) * GRID_SIZE)
+        if len(snake) % 5 == 0:
+            level += 1
+            speed -= 20
+
+    # Check collision with wall or self
+    if (
+        head[0] < 0 or head[0] >= SCREEN_WIDTH or
+        head[1] < 0 or head[1] >= SCREEN_HEIGHT or
+        head in snake[1:]
+    ):
+        is_game_over = True
+
+def handle_events():
+    global dx, dy, is_paused, is_game_over
+
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            quit()
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_LEFT and dx != GRID_SIZE:
+                dx, dy = -GRID_SIZE, 0
+            elif event.key == pygame.K_RIGHT and dx != -GRID_SIZE:
+                dx, dy = GRID_SIZE, 0
+            elif event.key == pygame.K_UP and dy != GRID_SIZE:
+                dx, dy = 0, -GRID_SIZE
+            elif event.key == pygame.K_DOWN and dy != -GRID_SIZE:
+                dx, dy = 0, GRID_SIZE
+            elif event.key == pygame.K_SPACE:
+                is_paused = not is_paused
+            elif event.key == pygame.K_RETURN and is_game_over:
+                reset_game()
+
+def reset_game():
+    global snake, food, dx, dy, is_game_over, level, speed
+    snake = [(100, 100)]
+    food = (200, 200)
+    dx, dy = GRID_SIZE, 0
+    is_game_over = False
+    level = 1
+    speed = 150
+
+def draw_text(text, font, color, x, y):
+    text_surface = font.render(text, True, color)
+    text_rect = text_surface.get_rect()
+    text_rect.center = (x, y)
+    screen.blit(text_surface, text_rect)
+
+# Main game loop
+def main():
+    global is_game_over, is_paused, level, speed
+
+    while True:
+        screen.fill(WHITE)
+
+        if not is_game_over:
+            if not is_paused:
+                move_snake()
+        else:
+            draw_text("Game Over!", pygame.font.Font(None, 36), RED, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 50)
+            draw_text(f"Score: {len(snake) - 1}", pygame.font.Font(None, 24), GREEN, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 100)
+            draw_text("Press Enter to play again", pygame.font.Font(None, 24), GREEN, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 150)
+
+        draw_snake()
+        draw_food()
+
+        if is_paused:
+            draw_text("Paused", pygame.font.Font(None, 36), GREEN, SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+
+        draw_text(f"Level: {level}", pygame.font.Font(None, 24), GREEN, SCREEN_WIDTH // 2, 20)
+
+        pygame.display.update()
+
+        handle_events()
+        clock.tick(speed)
+
+if __name__ == "__main__":
+    main()
